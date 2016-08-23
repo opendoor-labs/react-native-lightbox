@@ -45,10 +45,25 @@ var LightboxOverlay = React.createClass({
     swipeToDismiss:  PropTypes.bool,
   },
 
+  childContextTypes: {
+    setCloseable: PropTypes.func,
+  },
+
+  getChildContext: function() {
+    return {
+      setCloseable: function(closeable) {
+        this.setState({
+          isCloseable: closeable,
+        });
+      }.bind(this),
+    };
+  },
+
   getInitialState: function() {
     return {
       isAnimating: false,
       isPanning: false,
+      isCloseable: true,
       target: {
         x: 0,
         y: 0,
@@ -69,10 +84,15 @@ var LightboxOverlay = React.createClass({
   componentWillMount: function() {
     this._panResponder = PanResponder.create({
       // Ask to be the responder:
-      onStartShouldSetPanResponder: (evt, gestureState) => !this.state.isAnimating,
-      onStartShouldSetPanResponderCapture: (evt, gestureState) => !this.state.isAnimating,
-      onMoveShouldSetPanResponder: (evt, gestureState) => !this.state.isAnimating,
-      onMoveShouldSetPanResponderCapture: (evt, gestureState) => !this.state.isAnimating,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        if (!this.state.isCloseable) {
+          return false;
+        }
+        if (Math.abs(gestureState.dy) > 8 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx)) {
+          return true;
+        }
+        return false;
+      },
 
       onPanResponderGrant: (evt, gestureState) => {
         this.state.pan.setValue(0);
@@ -89,7 +109,6 @@ var LightboxOverlay = React.createClass({
             isPanning: false,
             target: {
               y: gestureState.dy,
-              x: gestureState.dx,
               opacity: 1 - Math.abs(gestureState.dy / WINDOW_HEIGHT)
             }
           });
@@ -193,7 +212,7 @@ var LightboxOverlay = React.createClass({
 
     var background = (<Animated.View style={[styles.background, { backgroundColor: backgroundColor }, lightboxOpacityStyle]}></Animated.View>);
     var header = (<Animated.View style={[styles.header, lightboxOpacityStyle]}>{(renderHeader ?
-      renderHeader(this.close) :
+      renderHeader(this.state.isCloseable, this.close) :
       (
         <TouchableOpacity onPress={this.close}>
           <Text style={styles.closeButton}>×</Text>
