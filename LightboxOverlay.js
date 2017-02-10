@@ -221,7 +221,7 @@ var LightboxOverlay = React.createClass({
     )}</Animated.View>);
     var content = (
       <Animated.View style={[openStyle, dragStyle]} {...handlers}>
-        {this.props.children}
+        {React.cloneElement(this.props.children, { isFullyVisible: !this.state.isPanning && !this.state.isAnimating })}
       </Animated.View>
     );
     if(this.props.navigator) {
